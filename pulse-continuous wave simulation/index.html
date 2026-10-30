@@ -18,7 +18,7 @@
 </section>
 <div class="controls">
 <div class="sliders">
-<label for="spacing"><span class="label-line"><span>リボンの間隔</span><output id="spacing-value" for="spacing">1.5 m</output></span><input id="spacing" type="range" min="0.1" max="3" step="0.1" value="1.5"></label>
+<label for="spacing"><span class="label-line"><span>印の間隔</span><output id="spacing-value" for="spacing">1.5 m</output></span><input id="spacing" type="range" min="0.1" max="3" step="0.1" value="1.5"></label>
 <label for="speed"><span class="label-line"><span>波の速さ</span><output id="speed-value" for="speed">2.0 m/s</output></span><input id="speed" type="range" min="0.5" max="5" step="0.1" value="2"></label>
 </div>
 <div class="buttons"><button id="sine" type="button" aria-pressed="false">正弦波</button><button id="wave-toggle" type="button" aria-pressed="true">波形を表示</button><button id="pause" type="button">一時停止</button><button id="reset" type="button">リセット</button></div>
@@ -130,15 +130,9 @@ function step(dt){
   }
   travel+=Number($('speed').value)*dt;record(travel,sourceY);
 }
-function ribbon(x,y,highlight,size=1){
-  if(size<.45){
-    ctx.beginPath();ctx.arc(x,y,Math.max(1.2,3*size),0,2*Math.PI);ctx.fillStyle=highlight?'#ad5732':'#387b89';ctx.fill();return;
-  }
-  ctx.save();ctx.translate(x,y);ctx.scale(size,size);
-  ctx.fillStyle=highlight?'#cc7651':'#5d9eac';
-  ctx.beginPath();ctx.moveTo(-2,0);ctx.lineTo(-8,-6);ctx.lineTo(-8,6);ctx.closePath();ctx.fill();
-  ctx.beginPath();ctx.moveTo(2,0);ctx.lineTo(8,-6);ctx.lineTo(8,6);ctx.closePath();ctx.fill();
-  ctx.beginPath();ctx.arc(0,0,3,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=highlight?'#ad5732':'#387b89';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+function marker(x,y,highlight,size=1){
+  ctx.beginPath();ctx.arc(x,y,Math.max(1.2,5*size),0,2*Math.PI);
+  ctx.fillStyle=highlight?'#cc7651':'#387b89';ctx.fill();
 }
 function draw(){
   if(width<=0||height<=0)return;
@@ -149,7 +143,7 @@ function draw(){
   const spacing=Number($('spacing').value),markerXs=[];
   const spacingPixels=spacing/LENGTH*(g.right-g.left);
   const guideEvery=Math.max(1,Math.ceil(14/spacingPixels));
-  const ribbonSize=Math.min(1,Math.max(.18,spacingPixels/18));
+  const markerSize=Math.min(1,Math.max(.18,spacingPixels/18));
   for(let x=spacing;x<=LENGTH+.001;x+=spacing){
     markerXs.push(x);if((markerXs.length-1)%guideEvery!==0)continue;ctx.setLineDash([3,5]);ctx.strokeStyle='#e5ebee';ctx.beginPath();ctx.moveTo(px(x),g.top);ctx.lineTo(px(x),g.bottom);ctx.stroke();
   }
@@ -161,7 +155,7 @@ function draw(){
   const points=Math.ceil((g.right-g.left)*1.5);
   for(let i=0;i<=points;i++){const x=i/points*LENGTH;if(i===0)ctx.moveTo(px(x),py(at(x)));else ctx.lineTo(px(x),py(at(x)));}ctx.stroke();
   }
-  for(let i=0;i<markerXs.length;i++)ribbon(px(markerXs[i]),py(at(markerXs[i])),i===Math.floor((markerXs.length-1)/2),ribbonSize);
+  for(let i=0;i<markerXs.length;i++)marker(px(markerXs[i]),py(at(markerXs[i])),i===Math.floor((markerXs.length-1)/2),markerSize);
   ctx.strokeStyle='#dce6ea';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(g.left,g.top);ctx.lineTo(g.left,g.bottom);ctx.stroke();
   const sourcePixel=py(sourceY);
   ctx.fillStyle='#e0eff1';ctx.beginPath();ctx.arc(g.left,sourcePixel,21,0,2*Math.PI);ctx.fill();
