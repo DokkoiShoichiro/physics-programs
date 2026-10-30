@@ -155,7 +155,7 @@ function draw(){
   const points=Math.ceil((g.right-g.left)*1.5);
   for(let i=0;i<=points;i++){const x=i/points*LENGTH;if(i===0)ctx.moveTo(px(x),py(at(x)));else ctx.lineTo(px(x),py(at(x)));}ctx.stroke();
   }
-  for(let i=0;i<markerXs.length;i++)marker(px(markerXs[i]),py(at(markerXs[i])),i===Math.floor((markerXs.length-1)/2),markerSize);
+  for(let i=0;i<markerXs.length;i++)marker(px(markerXs[i]),py(at(markerXs[i])),(i+1)%5===0,markerSize);
   ctx.strokeStyle='#dce6ea';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(g.left,g.top);ctx.lineTo(g.left,g.bottom);ctx.stroke();
   const sourcePixel=py(sourceY);
   ctx.fillStyle='#e0eff1';ctx.beginPath();ctx.arc(g.left,sourcePixel,21,0,2*Math.PI);ctx.fill();
