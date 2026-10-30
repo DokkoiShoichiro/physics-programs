@@ -22,17 +22,18 @@ button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-off
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 @media(max-width:600px){main{padding:20px 12px}header{margin-bottom:20px}h1{font-size:18px}.workspace{grid-template-columns:84px minmax(0,1fr);gap:10px}.card h2{padding:12px 10px}.canvas-wrap{height:clamp(280px,56svh,480px)}.actions button{flex:1;padding:11px 12px}}
 
-[hidden]{display:none!important}.task-label{font-size:14px;color:#647078}.task-picker{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.task-picker button{flex:1}.complete{font-size:16px;text-align:right;margin:24px 0 0}.finished{text-align:center;padding:80px 16px}.finished p{font-size:22px;margin:0 0 28px}#enter,#next,#end,#home,#practice-home{background:#293f49;color:white;border-color:#293f49}#enter:hover,#next:hover,#end:hover,#home:hover,#practice-home:hover{background:#3b5662}
+[hidden]{display:none!important}.task-label{font-size:14px;color:#647078}.task-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 24px}.task-picker button{min-height:64px;font-size:17px;font-weight:600;color:#247785;border-color:#a6c4cb;background:#f4f9fa}.task-picker button:hover{background:#e1eff2}.complete{font-size:16px;text-align:right;margin:24px 0 0}.finished{text-align:center;padding:80px 16px}.finished p{font-size:22px;margin:0 0 28px}#enter,#next,#end,#home,#practice-home{background:#293f49;color:white;border-color:#293f49}#enter:hover,#next:hover,#end:hover,#home:hover,#practice-home:hover{background:#3b5662}
 .effects{position:absolute;inset:0;overflow:hidden;pointer-events:none}.particle{position:absolute;left:50%;top:18%;width:7px;height:13px;background:var(--color);border-radius:2px;animation:confetti var(--duration) ease-out forwards;transform:rotate(var(--rotation))}.spark{border-radius:50%;width:6px;height:6px}
 #wave-card{transition:border-color .3s,box-shadow .3s}#wave-card[data-tier="good"]{border-color:#388b97}#wave-card[data-tier="great"]{border-color:#6b6ad4;box-shadow:0 0 0 2px #7975e51a}#wave-card[data-tier="excellent"]{border-color:#d0a145;box-shadow:0 0 24px #e0b34630}#wave-card[data-tier="perfect"]{border-color:#dca726;box-shadow:0 0 0 3px #eac45f30,0 0 36px #e4b63450;animation:celebrate 1s ease-in-out 3}
 @keyframes confetti{0%{opacity:0;translate:0 0}10%{opacity:1}100%{opacity:0;translate:var(--dx) var(--dy);rotate:var(--spin)}}@keyframes celebrate{50%{box-shadow:0 0 0 6px #eac45f20,0 0 48px #e4b63470}}
 @media(prefers-reduced-motion:reduce){.particle{animation:none;display:none}#wave-card{animation:none!important;transition:none}}
-@media(max-width:600px){.actions{justify-content:stretch}.actions button{flex:1 1 calc(50% - 10px)}.task-picker button{flex:1 1 calc(50% - 10px)}.complete{text-align:center}}
+@media(max-width:600px){.actions{justify-content:stretch}.actions button{flex:1 1 calc(50% - 10px)}.task-picker{gap:8px;margin-bottom:16px}.task-picker button{min-height:56px;padding:10px 4px;font-size:14px}.complete{text-align:center}}
 </style>
 </head>
 <body>
 <main>
 <header><h1>Wave Creator</h1><span id="task-label" class="task-label"></span></header>
+<nav id="task-picker" class="task-picker" aria-label="課題を選ぶ" hidden><button type="button" data-task="0">課題①</button><button type="button" data-task="1">課題②</button><button type="button" data-task="2">課題③</button><button type="button" data-task="3">課題④</button></nav>
 <div id="lab">
 <div class="workspace">
 <section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div></section>
@@ -47,7 +48,6 @@ button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-off
 </div>
 </div>
 <section id="finished" class="finished" hidden><p>これで課題は終了です</p><button id="home" type="button">最初に戻る</button></section>
-<nav id="task-picker" class="task-picker" aria-label="課題を選ぶ" hidden><button type="button" data-task="0">課題①</button><button type="button" data-task="1">課題②</button><button type="button" data-task="2">課題③</button><button type="button" data-task="3">課題④</button></nav>
 <span id="status" class="sr-only" role="status"></span>
 
 
@@ -120,7 +120,7 @@ function startTask(index, mode) {
   taskIndex = index; runMode = mode; screen = 'lab'; resetExperiment();
 }
 function goHome() {
-  taskIndex = -1; screen = 'lab'; resetExperiment();
+  taskIndex = -1; screen = 'lab'; resetExperiment(); window.scrollTo(0,0);
 }
 $('reset').addEventListener('click', resetExperiment);
 $('enter').addEventListener('click', () => {
