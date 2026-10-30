@@ -214,7 +214,8 @@ function calculateMatch(index = taskIndex) {
     difference += Math.abs(actual-target);
     magnitude += Math.abs(actual)+Math.abs(target);
   }
-  return magnitude > 0 ? Math.max(0,Math.min(100,100*(1-difference/magnitude))) : 0;
+  const similarity = magnitude > 0 ? Math.max(0,Math.min(1,1-difference/magnitude)) : 0;
+  return 100 * Math.pow(similarity, 1.2);
 }
 function scoreTier(value) {
   if (value >= 99.5) return 'perfect';
