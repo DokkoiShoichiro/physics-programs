@@ -27,7 +27,7 @@ button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-off
 <header><h1>Wave Creator</h1></header>
 <div class="workspace">
 <section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div></section>
-<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すとスケールを調整し、波形全体を中央に表示します。"></canvas></div></section>
+<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すと波が右へ進み、中央付近で停止します。"></canvas></div></section>
 <div class="actions"><button id="reset" type="button">やり直し</button><button id="save" type="button" disabled>画像を保存</button></div>
 </div>
 <span id="status" class="sr-only" role="status"></span>
@@ -40,7 +40,7 @@ const source = document.getElementById('source'), wave = document.getElementById
 const statusText = document.getElementById('status'), save = document.getElementById('save');
 const STEP = 1 / 60;
 let state = 'ready', displacement = 0, samples = [0], time = 0, span = 8;
-let amplitudeRange = 1;
+let amplitudeRange = 1, stopTime = 0, playbackRate = 1;
 let last = null, accumulator = 0, pointer = null, activeKey = null;
 const sizes = new Map();
 function message(text) { statusText.textContent = text; }
@@ -71,12 +71,15 @@ function finish() {
   }
   const duration = (samples.length - 1) * STEP;
   amplitudeRange = peak > 0 ? peak : 1;
-  // 左右に10%ずつ余白を取り、指を離した瞬間に波全体を表示する。
-  span = duration / 0.8;
-  time = (span + duration) / 2;
+  // 完成した波の幅を画面の半分に合わせてから、左端から送り出す。
+  // 停止時には波全体が25〜75%の範囲に入り、中央に収まる。
+  span = 2 * duration;
+  stopTime = 1.5 * duration;
+  playbackRate = stopTime / 2;
+  time = 0;
   accumulator = 0; last = null;
-  state = 'stopped'; setDisplacement(0); save.disabled = false;
-  message(peak > 0 ? '波形全体に合わせて表示しました — 画像を保存できます' : '波源の動きがありません。「やり直し」で波源を上下に動かしてください');
+  state = peak > 0 ? 'moving' : 'stopped'; setDisplacement(0); save.disabled = peak > 0;
+  message(peak > 0 ? '波が進んでいます' : '波源の動きがありません。「やり直し」で波源を上下に動かしてください');
   render();
 }
 
@@ -109,10 +112,11 @@ document.addEventListener('visibilitychange', () => {
 });
 document.getElementById('reset').addEventListener('click', () => {
   if (pointer !== null && source.hasPointerCapture(pointer)) source.releasePointerCapture(pointer);
-  pointer = null; activeKey = null; state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8; amplitudeRange = 1; last = null; accumulator = 0; save.disabled = true;
+  pointer = null; activeKey = null; state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8; amplitudeRange = 1; stopTime = 0; playbackRate = 1; last = null; accumulator = 0; save.disabled = true;
   message('左の波源を上下に動かしてください'); render();
 });
 function sample(t) {
+  if (state === 'ready' || state === 'drawing') return 0;
   if (t < 0) return 0;
   const index = t / STEP, i = Math.floor(index), fraction = index - i;
   const a = samples[Math.min(i, samples.length - 1)] || 0;
@@ -150,13 +154,21 @@ new ResizeObserver(() => {
   const rect=wave.getBoundingClientRect(),ratio=window.devicePixelRatio||1;wave.width=Math.round(rect.width*ratio);wave.height=Math.round(rect.height*ratio);sizes.set(wave,{width:rect.width,height:rect.height,ratio});render();
 }).observe(wave);
 function frame(now){
-  if (last !== null && !document.hidden && state === 'drawing') {
-    accumulator += Math.min((now-last)/1000, .05);
-    while (accumulator >= STEP) {
-      accumulator -= STEP; time += STEP; samples.push(displacement);
+  if (last !== null && !document.hidden) {
+    const dt = Math.min((now-last)/1000, .05);
+    if (state === 'drawing') {
+      accumulator += dt;
+      while (accumulator >= STEP) {
+        accumulator -= STEP; samples.push(displacement);
+      }
+    } else if (state === 'moving') {
+      time = Math.min(stopTime, time + dt * playbackRate);
+      if (time >= stopTime) {
+        state = 'stopped'; save.disabled = false;
+        message('波が止まりました');
+      }
+      render();
     }
-    span = Math.max(8, 2 * (time + 2));
-    render();
   }
   last = now;
   requestAnimationFrame(frame);
