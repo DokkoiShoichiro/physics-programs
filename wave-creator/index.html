@@ -22,7 +22,7 @@ button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-off
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 @media(max-width:600px){main{padding:20px 12px}header{margin-bottom:20px}h1{font-size:18px}.workspace{grid-template-columns:84px minmax(0,1fr);gap:10px}.card h2{padding:12px 10px}.canvas-wrap{height:clamp(280px,56svh,480px)}.actions button{flex:1;padding:11px 12px}}
 
-[hidden]{display:none!important}.task-label{font-size:14px;color:#647078}.task-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 24px}.task-picker button{min-height:64px;font-size:17px;font-weight:600;color:#247785;border-color:#a6c4cb;background:#f4f9fa}.task-picker button:hover{background:#e1eff2}.complete{font-size:16px;text-align:right;margin:24px 0 0}.finished{text-align:center;padding:80px 16px}.finished p{font-size:22px;margin:0 0 28px}#enter,#next,#end,#home,#practice-home{background:#293f49;color:white;border-color:#293f49}#enter:hover,#next:hover,#end:hover,#home:hover,#practice-home:hover{background:#3b5662}
+[hidden]{display:none!important}.task-label{font-size:14px;color:#647078}.task-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 24px}.task-picker button{min-height:64px;font-size:17px;font-weight:600;color:#247785;border-color:#a6c4cb;background:#f4f9fa}.task-picker button:hover{background:#e1eff2}.task-picker button[aria-pressed="true"]{background:#247785;border-color:#247785;color:#fff}.complete{font-size:16px;text-align:right;margin:24px 0 0}.finished{text-align:center;padding:80px 16px}.finished p{font-size:22px;margin:0 0 28px}#enter,#next,#end,#home,#practice-home{background:#293f49;color:white;border-color:#293f49}#enter:hover,#next:hover,#end:hover,#home:hover,#practice-home:hover{background:#3b5662}
 .effects{position:absolute;inset:0;overflow:hidden;pointer-events:none}.particle{position:absolute;left:50%;top:18%;width:7px;height:13px;background:var(--color);border-radius:2px;animation:confetti var(--duration) ease-out forwards;transform:rotate(var(--rotation))}.spark{border-radius:50%;width:6px;height:6px}
 #wave-card{transition:border-color .3s,box-shadow .3s}#wave-card[data-tier="good"]{border-color:#388b97}#wave-card[data-tier="great"]{border-color:#6b6ad4;box-shadow:0 0 0 2px #7975e51a}#wave-card[data-tier="excellent"]{border-color:#d0a145;box-shadow:0 0 24px #e0b34630}#wave-card[data-tier="perfect"]{border-color:#dca726;box-shadow:0 0 0 3px #eac45f30,0 0 36px #e4b63450;animation:celebrate 1s ease-in-out 3}
 @keyframes confetti{0%{opacity:0;translate:0 0}10%{opacity:1}100%{opacity:0;translate:var(--dx) var(--dy);rotate:var(--spin)}}@keyframes celebrate{50%{box-shadow:0 0 0 6px #eac45f20,0 0 48px #e4b63470}}
@@ -38,7 +38,7 @@ button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-off
 <div class="workspace">
 <section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div></section>
 <section class="card" id="wave-card"><h2>生じる波</h2><div class="canvas-wrap" id="wave-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すと波が右へ進み、中央付近で停止します。"></canvas><div id="effects" class="effects" aria-hidden="true"></div></div></section>
-<div class="actions"><button id="reset" type="button">やり直し</button><button id="save" type="button" disabled>画像を保存</button><button id="enter" type="button">課題へ進む</button><button id="next" type="button" hidden disabled>次の課題へ</button><button id="end" type="button" hidden disabled>課題を終わる</button><button id="practice-home" type="button" hidden disabled>最初に戻る</button></div>
+<div class="actions"><button id="reset" type="button">やり直し</button><button id="save" type="button" disabled>画像を保存</button><button id="enter" type="button">課題へ進む</button><button id="next" type="button" hidden disabled>次の課題へ</button><button id="end" type="button" hidden disabled>課題を終わる</button><button id="practice-home" type="button" hidden>自由作成</button></div>
 </div>
 <p id="complete" class="complete" role="status" hidden>これで課題は終了です</p>
 <div class="instructions">
@@ -92,13 +92,17 @@ function updateInterface() {
   $('next').disabled = !saved;
   $('end').hidden = !inTask() || runMode !== 'sequence' || taskIndex !== 3;
   $('end').disabled = !saved;
-  $('practice-home').hidden = !inTask() || runMode !== 'practice';
-  $('practice-home').disabled = !saved;
+  $('practice-home').hidden = !inTask() || !unlocked;
+  $('practice-home').disabled = false;
   $('complete').hidden = !(inTask() && taskIndex === 3 && saved && runMode === 'sequence');
-  $('task-picker').hidden = !unlocked || inTask() || screen !== 'lab';
+  $('task-picker').hidden = !unlocked;
+  for (const button of document.querySelectorAll('[data-task]')) {
+    button.setAttribute('aria-pressed', String(screen === 'lab' && Number(button.dataset.task) === taskIndex));
+  }
   save.disabled = state !== 'stopped' || saving;
-  $('instruction-last').textContent = inTask()
-    ? '③ 波が止まったら画像を保存し、次へ進みます。'
+  $('instruction-last').textContent = unlocked
+    ? '③ 上のボタンで、いつでも好きな課題に切り替えられます。'
+    : inTask() ? '③ 波が止まったら画像を保存し、次へ進みます。'
     : '③ 波形を確認したら、画像を保存するか「やり直し」で次の実験へ。';
   $('wave-card').dataset.tier = score === null ? '' : scoreTier(score);
 }
@@ -117,7 +121,7 @@ function resetExperiment() {
   updateInterface(); render();
 }
 function startTask(index, mode) {
-  taskIndex = index; runMode = mode; screen = 'lab'; resetExperiment();
+  taskIndex = index; runMode = unlocked ? 'practice' : mode; screen = 'lab'; resetExperiment();
 }
 function goHome() {
   taskIndex = -1; screen = 'lab'; resetExperiment(); window.scrollTo(0,0);
@@ -131,6 +135,8 @@ $('next').addEventListener('click', () => {
 });
 $('end').addEventListener('click', () => {
   if (!saved || taskIndex !== 3 || runMode !== 'sequence') return;
+  unlocked = true;
+  try { localStorage.setItem('wave-creator-tasks-unlocked', '1'); } catch {}
   screen = 'finished'; updateInterface(); $('home').focus();
 });
 $('home').addEventListener('click', () => {
@@ -139,9 +145,9 @@ $('home').addEventListener('click', () => {
   try { localStorage.setItem('wave-creator-tasks-unlocked', '1'); } catch {}
   goHome();
 });
-$('practice-home').addEventListener('click', () => { if (saved && runMode === 'practice') goHome(); });
+$('practice-home').addEventListener('click', () => { if (unlocked) goHome(); });
 for (const button of document.querySelectorAll('[data-task]')) button.addEventListener('click', () => {
-  if (unlocked && !inTask() && screen === 'lab') startTask(Number(button.dataset.task), 'practice');
+  if (unlocked) startTask(Number(button.dataset.task), 'practice');
 });
 function begin() {
   if (state !== 'ready' || screen !== 'lab') return false;
