@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="波源を指で動かして、横波が伝わる様子を観察する実験。">
+<title>Wave Creator｜波をつくろう</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#243a48;background:#f5f7f8;font-synthesis:none}*{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;padding:40px 24px}header{margin-bottom:28px}.eyebrow{font-size:12px;color:#397d86;letter-spacing:.16em}h1{font-size:clamp(26px,4vw,38px);margin:8px 0 12px;letter-spacing:.02em}header p{margin:0;color:#586e7c;line-height:1.8}.workspace{display:grid;grid-template-columns:180px minmax(0,1fr) 154px;gap:20px;align-items:start}.card{border:1px solid #cbd7dd;border-radius:14px;background:white;overflow:hidden}.card h2{font-size:16px;margin:0;padding:17px 18px;border-bottom:1px solid #e1e8ec}.canvas-wrap{height:340px;position:relative}canvas{display:block;width:100%;height:100%}#source{touch-action:none;cursor:ns-resize}#source:focus-visible{outline:3px solid #d38b38;outline-offset:-4px}.arrow{display:none}.actions{display:flex;flex-direction:column;gap:12px;padding-top:0}button{min-height:48px;padding:12px;border-radius:9px;font:inherit;font-size:14px;font-weight:600;border:1px solid #bdcdd5;background:white;color:#243a48;cursor:pointer}button.primary{background:#246f7c;color:white;border-color:#246f7c}button:disabled{opacity:.45;cursor:default}button:focus-visible{outline:3px solid #d38b38;outline-offset:3px}.caption{padding:12px 16px;border-top:1px solid #e1e8ec;color:#607683;font-size:12px;line-height:1.7;min-height:65px}.status{margin-top:22px;display:flex;align-items:center;gap:10px;font-size:14px;color:#39636e}.dot{width:8px;height:8px;border-radius:50%;background:#2f8995}.help{margin-top:24px;padding:18px 20px;border-left:3px solid #70a4ad;background:#edf3f5;line-height:1.9;font-size:14px;color:#526b79}.help p{margin:0}.footnote{font-size:12px;color:#6c818d;line-height:1.8;margin-top:18px}@media(max-width:950px){.workspace{grid-template-columns:150px minmax(0,1fr)}.actions{grid-column:1/-1;flex-direction:row}.actions button{min-width:150px}.canvas-wrap{height:300px}}@media(max-width:540px){main{padding:24px 14px}.workspace{grid-template-columns:100px minmax(0,1fr);gap:10px}.card h2{padding:14px 10px;font-size:14px}.canvas-wrap{height:300px}.caption{padding:10px;font-size:11px;min-height:78px}.actions button{min-width:0;flex:1;font-size:13px}.help{font-size:13px;padding:14px}.status{font-size:13px}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="eyebrow">WAVE CREATOR</div><h1>波をつくろう</h1><p>波源を上下に動かして、波が伝わる様子を観察しよう。</p></header>
+<div class="workspace">
+<section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div><div class="caption">丸い点を上下に動かす<br>指を離すと波が進みます</div></section>
+<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。右向きに伝わり、中央で停止します。"></canvas></div><div class="caption">横軸：位置　／　縦軸：変位<br>波は右向きに進み、中央付近で止まります</div></section>
+<div class="actions"><button id="reset" class="primary" type="button">やり直し</button><button id="save" type="button" disabled>スクリーンショット</button></div>
+</div>
+<div class="status" role="status"><span class="dot" aria-hidden="true"></span><span id="status">左の波源を上下に動かしてください</span></div>
+<div class="help"><p>① 波源を押したまま、上下に自由に動かします。</p><p>② 指を離すと波源が原点に戻り、つくった波が右へ進んで止まります。</p><p>③ 波形を確認したら、画像を保存するか「やり直し」で次の実験へ。</p></div>
+<p class="footnote">減衰・反射のない横波のモデルです。媒質の変位が一定の速さで伝わります。画面は模式図で、単位や縮尺は固定していません。キーボードでは波源を選択し、上下矢印キーで操作できます。</p>
+</main>
+<script>
+'use strict';
+const source = document.getElementById('source'), wave = document.getElementById('wave');
+const statusText = document.getElementById('status'), save = document.getElementById('save');
+const STEP = 1 / 60;
+let state = 'ready', displacement = 0, samples = [0], time = 0, stopTime = 4, span = 8;
+let last = null, accumulator = 0, pointer = null, activeKey = null;
+const sizes = new Map();
+function message(text) { statusText.textContent = text; }
+function setDisplacement(value) {
+  displacement = Math.max(-1, Math.min(1, value));
+  source.setAttribute('aria-valuenow', displacement.toFixed(2));
+}
+function begin() {
+  if (state !== 'ready') return false;
+  state = 'drawing'; last = null;
+  message('波源を記録中 — 指を離すと波が進みます');
+  return true;
+}
+function finish() {
+  if (state !== 'drawing') return;
+  state = 'moving'; setDisplacement(0);
+  span = Math.max(8, 2 * (time + 2)); stopTime = span / 2;
+  message('波が右へ伝わっています…');
+}
+function move(event) {
+  const rect = source.getBoundingClientRect();
+  setDisplacement((rect.height / 2 - (event.clientY - rect.top)) / (rect.height * .34));
+  render();
+}
+source.addEventListener('pointerdown', event => {
+  if (pointer !== null || activeKey !== null || (event.pointerType === 'mouse' && event.button !== 0) || !begin()) return;
+  pointer = event.pointerId; source.setPointerCapture(pointer); source.focus({preventScroll:true}); move(event);
+});
+source.addEventListener('pointermove', event => { if (event.pointerId === pointer) move(event); });
+function release(event) { if (event.pointerId === pointer) { pointer = null; finish(); } }
+source.addEventListener('pointerup', release);
+source.addEventListener('pointercancel', release);
+source.addEventListener('lostpointercapture', release);
+source.addEventListener('keydown', event => {
+  if (!['ArrowUp','ArrowDown'].includes(event.key)) return;
+  event.preventDefault();
+  if (pointer !== null || (state !== 'ready' && state !== 'drawing')) return;
+  if (state === 'ready') begin();
+  activeKey = event.key; setDisplacement(displacement + (event.key === 'ArrowUp' ? .1 : -.1)); render();
+});
+source.addEventListener('keyup', event => { if (event.key === activeKey) { activeKey = null; finish(); } });
+source.addEventListener('blur', () => { if (activeKey !== null) { activeKey = null; finish(); } });
+document.addEventListener('visibilitychange', () => {
+  last = null;
+  if (document.hidden && state === 'drawing') { pointer = null; activeKey = null; finish(); }
+});
+document.getElementById('reset').addEventListener('click', () => {
+  if (pointer !== null && source.hasPointerCapture(pointer)) source.releasePointerCapture(pointer);
+  pointer = null; activeKey = null; state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8; stopTime = 4; last = null; accumulator = 0; save.disabled = true;
+  message('左の波源を上下に動かしてください'); render();
+});
+function sample(t) {
+  if (t < 0) return 0;
+  const index = t / STEP, i = Math.floor(index), fraction = index - i;
+  const a = samples[Math.min(i, samples.length - 1)] || 0;
+  const b = samples[Math.min(i + 1, samples.length - 1)] || 0;
+  return a + (b - a) * fraction;
+}
+function draw(canvas, isSource) {
+  const size = sizes.get(canvas); if (!size) return;
+  const {width:w,height:h,ratio} = size, c = canvas.getContext('2d');
+  c.setTransform(ratio,0,0,ratio,0,0); c.clearRect(0,0,w,h); c.fillStyle = '#fff'; c.fillRect(0,0,w,h);
+  const left = isSource ? w / 2 : 32, right = w - 18, top = 30, bottom = h - 28, mid = h / 2, scale = h * .34;
+  c.strokeStyle = '#edf1f3'; c.lineWidth = 1;
+  for (let j=-2;j<=2;j++) { const y=mid+j*scale/2;c.beginPath();c.moveTo(isSource?12:left,y);c.lineTo(right,y);c.stroke(); }
+  if (!isSource) for(let j=1;j<=8;j++){const x=left+(right-left)*j/8;c.beginPath();c.moveTo(x,top);c.lineTo(x,bottom);c.stroke();}
+  c.strokeStyle = '#6c818d'; c.lineWidth = 1.3;
+  c.beginPath();c.moveTo(left,bottom);c.lineTo(left,top);c.lineTo(left-4,top+7);c.moveTo(left,top);c.lineTo(left+4,top+7);
+  if(!isSource){c.moveTo(left,mid);c.lineTo(right,mid);c.lineTo(right-7,mid-4);c.moveTo(right,mid);c.lineTo(right-7,mid+4);}c.stroke();
+  c.font='12px system-ui';c.fillStyle='#607683';c.textAlign='left';c.fillText('変位',isSource?10:8,18);c.fillText('0',left-14,mid+16);
+  if(isSource){
+    c.setLineDash([3,4]);c.strokeStyle='#b8cdd3';c.beginPath();c.moveTo(left,mid);c.lineTo(left,mid-displacement*scale);c.stroke();c.setLineDash([]);
+    c.beginPath();c.arc(left,mid-displacement*scale,22,0,Math.PI*2);c.fillStyle='#e0eff1';c.fill();
+    c.beginPath();c.arc(left,mid-displacement*scale,9,0,Math.PI*2);c.fillStyle='#247785';c.fill();
+  } else {
+    c.textAlign='right';c.fillText('進む向き →',right,18);c.fillText('位置',right,h-8);
+    c.strokeStyle='#247785';c.lineWidth=3;c.lineJoin='round';c.beginPath();
+    for(let i=0;i<=Math.ceil(right-left);i++){const x=left+i;const y=mid-sample(time-i/(right-left)*span)*scale;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();
+  }
+}
+function render(){draw(source,true);draw(wave,false);}
+new ResizeObserver(entries => {
+  for(const entry of entries){const canvas=entry.target, rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);sizes.set(canvas,{width:rect.width,height:rect.height,ratio});}
+  render();
+}).observe(source);
+new ResizeObserver(() => {
+  const rect=wave.getBoundingClientRect(),ratio=window.devicePixelRatio||1;wave.width=Math.round(rect.width*ratio);wave.height=Math.round(rect.height*ratio);sizes.set(wave,{width:rect.width,height:rect.height,ratio});render();
+}).observe(wave);
+function frame(now){
+  if(last!==null && !document.hidden && (state==='drawing'||state==='moving')){
+    accumulator+=Math.min((now-last)/1000,.05);
+    while(accumulator>=STEP){
+      accumulator-=STEP;time+=STEP;samples.push(displacement);
+      if(state==='drawing') span=Math.max(8,2*(time+2));
+      if(state==='moving' && time>=stopTime){state='stopped';save.disabled=false;message('波が止まりました — 画像の保存、または「やり直し」ができます');break;}
+    }
+    render();
+  }
+  last=now;requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+save.addEventListener('click',()=>{
+  const image=document.createElement('canvas');image.width=1400;image.height=600;
+  const c=image.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,1400,600);c.fillStyle='#243a48';c.font='bold 30px system-ui';c.fillText('Wave Creator — 生じる波',40,55);
+  c.drawImage(source,40,90,180,400);c.drawImage(wave,250,90,1110,400);c.font='18px system-ui';c.fillText('波源の動きから生じた横波 / 進む向き →',40,550);
+  image.toBlob(blob=>{if(!blob){message('画像を生成できませんでした。もう一度お試しください');return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='wave-creator.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);},'image/png');
+});
+</script>
+</body>
+</html>
