@@ -14,6 +14,7 @@ header{margin-bottom:28px}h1{font-size:20px;font-weight:600;margin:0;letter-spac
 .card h2{font-size:13px;font-weight:500;color:#647078;margin:0;padding:14px 16px}
 .canvas-wrap{height:clamp(300px,58vh,560px);position:relative}
 canvas{display:block;width:100%;height:100%}#source{touch-action:none;cursor:ns-resize}
+.hint{margin:0;min-height:40px;padding:10px;color:#647078;font-size:11px;line-height:20px;text-align:center}
 .actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px}
 button{min-height:46px;padding:11px 20px;border-radius:5px;font:inherit;font-size:14px;border:1px solid #d1d8dc;background:white;color:#29343a;cursor:pointer}
 button:hover{background:#f0f3f4}button:disabled{opacity:.4;cursor:default}
@@ -26,8 +27,8 @@ button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-off
 <main>
 <header><h1>Wave Creator</h1></header>
 <div class="workspace">
-<section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div></section>
-<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すと波が右へ進み、中央付近で停止します。"></canvas></div></section>
+<section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div><p class="hint"><span aria-hidden="true">↕</span> ドラッグ</p></section>
+<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すと波が右へ進み、中央付近で停止します。"></canvas></div><p class="hint">離すと進む <span aria-hidden="true">→</span> 中央で停止</p></section>
 <div class="actions"><button id="reset" type="button">やり直し</button><button id="save" type="button" disabled>画像を保存</button></div>
 </div>
 <span id="status" class="sr-only" role="status"></span>
