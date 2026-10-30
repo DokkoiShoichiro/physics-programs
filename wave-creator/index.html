@@ -11,10 +11,10 @@
 </head>
 <body>
 <main>
-<header><div class="eyebrow">WAVE CREATOR</div><h1>波をつくろう</h1><p>波源を上下に動かして、波が伝わる様子を観察しよう。</p></header>
+<header><div class="eyebrow">WAVE CREATOR · v3</div><h1>波をつくろう</h1><p>波源を上下に動かして、波が伝わる様子を観察しよう。</p></header>
 <div class="workspace">
-<section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div><div class="caption">丸い点を上下に動かす<br>指を離すと波が進みます</div></section>
-<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。右向きに伝わり、中央で停止します。"></canvas></div><div class="caption">横軸：位置　／　縦軸：変位<br>操作後に縦横のスケールを自動調整します</div></section>
+<section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div><div class="caption">丸い点を上下に動かす<br>指を離すと波形を整えます</div></section>
+<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すとスケールを調整し、波形全体を中央に表示します。"></canvas></div><div class="caption">横軸：位置　／　縦軸：変位<br>操作後に縦横のスケールを自動調整します</div></section>
 <div class="actions"><button id="reset" class="primary" type="button">やり直し</button><button id="save" type="button" disabled>スクリーンショット</button></div>
 </div>
 <div class="status" role="status"><span class="dot" aria-hidden="true"></span><span id="status">左の波源を上下に動かしてください</span></div>
@@ -26,8 +26,8 @@
 const source = document.getElementById('source'), wave = document.getElementById('wave');
 const statusText = document.getElementById('status'), save = document.getElementById('save');
 const STEP = 1 / 60;
-let state = 'ready', displacement = 0, samples = [0], time = 0, stopTime = 4, span = 8;
-let amplitudeRange = 1, playbackRate = 1;
+let state = 'ready', displacement = 0, samples = [0], time = 0, span = 8;
+let amplitudeRange = 1;
 let last = null, accumulator = 0, pointer = null, activeKey = null;
 const sizes = new Map();
 function message(text) { statusText.textContent = text; }
@@ -38,27 +38,35 @@ function setDisplacement(value) {
 function begin() {
   if (state !== 'ready') return false;
   state = 'drawing'; last = null;
-  message('波源を記録中 — 指を離すと波が進みます');
+  message('波源を記録中 — 指を離すと波形を整えます');
   return true;
 }
 function finish() {
   if (state !== 'drawing') return;
-  // 最後の指の位置と、指を離した後の原点への復帰を記録する。
   samples.push(displacement, 0);
-  time = (samples.length - 1) * STEP;
-  const duration = time;
   let peak = 0;
   for (const value of samples) peak = Math.max(peak, Math.abs(value));
-  amplitudeRange = Math.max(peak, 0.02);
-  // 停止時の波形が横幅の25〜75%に収まる。上下にも余白を残す。
-  span = 2 * duration;
-  stopTime = 1.5 * duration;
-  playbackRate = (stopTime - time) / 1.2;
+  // 波源が動く前後の待ち時間を除き、実際の波形に表示を合わせる。
+  if (peak > 0) {
+    const threshold = peak * 0.001;
+    const first = samples.findIndex(value => Math.abs(value) > threshold);
+    let end = samples.length - 1;
+    while (end > first && Math.abs(samples[end]) <= threshold) end--;
+    samples = [0, ...samples.slice(Math.max(0, first - 1), end + 2), 0];
+  } else {
+    samples = [0, 0];
+  }
+  const duration = (samples.length - 1) * STEP;
+  amplitudeRange = peak > 0 ? peak : 1;
+  // 左右に10%ずつ余白を取り、指を離した瞬間に波全体を表示する。
+  span = duration / 0.8;
+  time = (span + duration) / 2;
   accumulator = 0; last = null;
-  state = 'moving'; setDisplacement(0);
-  message('波形に合わせて表示を調整しました — 中央へ移動しています…');
+  state = 'stopped'; setDisplacement(0); save.disabled = false;
+  message(peak > 0 ? '波形全体に合わせて表示しました — 画像を保存できます' : '波源の動きがありません。「やり直し」で波源を上下に動かしてください');
   render();
 }
+
 function move(event) {
   const rect = source.getBoundingClientRect();
   setDisplacement((rect.height / 2 - (event.clientY - rect.top)) / (rect.height * .34));
@@ -88,7 +96,7 @@ document.addEventListener('visibilitychange', () => {
 });
 document.getElementById('reset').addEventListener('click', () => {
   if (pointer !== null && source.hasPointerCapture(pointer)) source.releasePointerCapture(pointer);
-  pointer = null; activeKey = null; state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8; stopTime = 4; amplitudeRange = 1; playbackRate = 1; last = null; accumulator = 0; save.disabled = true;
+  pointer = null; activeKey = null; state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8; amplitudeRange = 1; last = null; accumulator = 0; save.disabled = true;
   message('左の波源を上下に動かしてください'); render();
 });
 function sample(t) {
@@ -129,25 +137,18 @@ new ResizeObserver(() => {
   const rect=wave.getBoundingClientRect(),ratio=window.devicePixelRatio||1;wave.width=Math.round(rect.width*ratio);wave.height=Math.round(rect.height*ratio);sizes.set(wave,{width:rect.width,height:rect.height,ratio});render();
 }).observe(wave);
 function frame(now){
-  if(last!==null && !document.hidden && (state==='drawing'||state==='moving')){
-    const dt = Math.min((now-last)/1000,.05);
-    if (state === 'moving') {
-      time = Math.min(stopTime, time + dt * playbackRate);
-      if (time >= stopTime) {
-        state = 'stopped'; save.disabled = false;
-        message('波が止まりました — 画像の保存、または「やり直し」ができます');
-      }
-    } else {
-      accumulator += dt;
-      while (accumulator >= STEP) {
-        accumulator -= STEP; time += STEP; samples.push(displacement);
-      }
-      span = Math.max(8, 2 * (time + 2));
+  if (last !== null && !document.hidden && state === 'drawing') {
+    accumulator += Math.min((now-last)/1000, .05);
+    while (accumulator >= STEP) {
+      accumulator -= STEP; time += STEP; samples.push(displacement);
     }
+    span = Math.max(8, 2 * (time + 2));
     render();
   }
-  last=now;requestAnimationFrame(frame);
+  last = now;
+  requestAnimationFrame(frame);
 }
+
 requestAnimationFrame(frame);
 save.addEventListener('click',()=>{
   const image=document.createElement('canvas');image.width=1400;image.height=600;
