@@ -182,10 +182,7 @@ function frame(now){
 
 requestAnimationFrame(frame);
 save.addEventListener('click',()=>{
-  const image=document.createElement('canvas');image.width=1400;image.height=600;
-  const c=image.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,1400,600);c.fillStyle='#243a48';c.font='bold 30px system-ui';c.fillText('Wave Creator — 生じる波',40,55);
-  c.drawImage(source,40,90,180,400);c.drawImage(wave,250,90,1110,400);c.font='18px system-ui';c.fillText('波源の動きから生じた横波 / 進む向き →',40,550);
-  image.toBlob(blob=>{if(!blob){message('画像を生成できませんでした。もう一度お試しください');return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='wave-creator.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);},'image/png');
+  wave.toBlob(blob=>{if(!blob){message('画像を生成できませんでした。もう一度お試しください');return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='wave-creator.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);},'image/png');
 });
 </script>
 </body>
