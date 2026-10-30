@@ -64,7 +64,7 @@ const TASKS = [
   {name: '課題④', sine: true}
 ];
 let state = 'ready', displacement = 0, samples = [0], time = 0, span = 8;
-let amplitudeRange = 1, stopTime = 0, playbackRate = 1;
+let stopTime = 0, playbackRate = 1;
 let last = null, accumulator = 0, pointer = null, activeKey = null;
 let taskIndex = -1, runMode = 'sequence', screen = 'lab', score = null, saved = false, saving = false, attempt = 0;
 let unlocked = false;
@@ -111,7 +111,7 @@ function resetExperiment() {
   if (captured !== null && source.hasPointerCapture(captured)) source.releasePointerCapture(captured);
   attempt++; saved = false; saving = false; score = null;
   state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8;
-  amplitudeRange = 1; stopTime = 0; playbackRate = 1; last = null; accumulator = 0;
+  stopTime = 0; playbackRate = 1; last = null; accumulator = 0;
   $('effects').replaceChildren();
   message(inTask() ? `${TASKS[taskIndex].name}。点線の波形を作ってください` : '左の波源を上下に動かしてください');
   updateInterface(); render();
@@ -162,7 +162,6 @@ function finish() {
     samples.unshift(0); samples.push(0);
   } else samples = [0, 0];
   const duration = (samples.length-1) * STEP;
-  amplitudeRange = peak > 0 ? peak : 1;
   span = 2 * duration; stopTime = 1.5 * duration; playbackRate = stopTime / 2;
   time = 0; accumulator = 0; last = null; setDisplacement(0);
   state = peak > 0 ? 'moving' : 'stopped';
@@ -211,7 +210,7 @@ function calculateMatch(index = taskIndex) {
   let difference = 0, magnitude = 0;
   for (let i=0; i<=600; i++) {
     const u = i/600;
-    const actual = recordedAt((1-u)*duration)/amplitudeRange, target = targetAt(u,index);
+    const actual = recordedAt((1-u)*duration), target = targetAt(u,index);
     difference += Math.abs(actual-target);
     magnitude += Math.abs(actual)+Math.abs(target);
   }
@@ -253,7 +252,7 @@ function draw(canvas, isSource) {
   const result = !isSource && score !== null;
   const left = isSource ? w/2 : 32, right = w-18, top = 64, bottom = h-28;
   const mid = (top+bottom)/2, visualScale = (bottom-top)*.4;
-  const scale = visualScale / (isSource ? 1 : amplitudeRange);
+  const scale = visualScale;
   if (result) {
     const tier = scoreTier(score);
     const palette = {plain:'#647078',good:'#247785',great:'#6b60bf',excellent:'#aa7914',perfect:'#a16a04'};
