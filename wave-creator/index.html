@@ -8,91 +8,172 @@
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color:#29343a;background:#fafafa;font-synthesis:none}
 *{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;padding:32px 24px}
-header{margin-bottom:28px}h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.03em}
+header{margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:12px}h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.03em}
 .workspace{display:grid;grid-template-columns:160px minmax(0,1fr);gap:20px;align-items:start}
 .card{border:1px solid #d9dee1;border-radius:6px;background:#fff;overflow:hidden}
 .card h2{font-size:13px;font-weight:500;color:#647078;margin:0;padding:14px 16px}
 .canvas-wrap{height:clamp(300px,58vh,560px);position:relative}
 canvas{display:block;width:100%;height:100%}#source{touch-action:none;cursor:ns-resize}
 .instructions{margin-top:24px;padding:18px 20px;border-left:3px solid #70a4ad;background:#edf3f5;line-height:1.9;font-size:14px;color:#526b79}.instructions p{margin:0}
-.actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px}
+.actions{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}
 button{min-height:46px;padding:11px 20px;border-radius:5px;font:inherit;font-size:14px;border:1px solid #d1d8dc;background:white;color:#29343a;cursor:pointer}
 button:hover{background:#f0f3f4}button:disabled{opacity:.4;cursor:default}
 button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-offset:-3px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 @media(max-width:600px){main{padding:20px 12px}header{margin-bottom:20px}h1{font-size:18px}.workspace{grid-template-columns:84px minmax(0,1fr);gap:10px}.card h2{padding:12px 10px}.canvas-wrap{height:clamp(280px,56svh,480px)}.actions button{flex:1;padding:11px 12px}}
+
+[hidden]{display:none!important}.task-label{font-size:14px;color:#647078}.task-picker{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.task-picker button{flex:1}.complete{font-size:16px;text-align:right;margin:24px 0 0}.finished{text-align:center;padding:80px 16px}.finished p{font-size:22px;margin:0 0 28px}#enter,#next,#end,#home,#practice-home{background:#293f49;color:white;border-color:#293f49}#enter:hover,#next:hover,#end:hover,#home:hover,#practice-home:hover{background:#3b5662}
+.effects{position:absolute;inset:0;overflow:hidden;pointer-events:none}.particle{position:absolute;left:50%;top:18%;width:7px;height:13px;background:var(--color);border-radius:2px;animation:confetti var(--duration) ease-out forwards;transform:rotate(var(--rotation))}.spark{border-radius:50%;width:6px;height:6px}
+#wave-card{transition:border-color .3s,box-shadow .3s}#wave-card[data-tier="good"]{border-color:#388b97}#wave-card[data-tier="great"]{border-color:#6b6ad4;box-shadow:0 0 0 2px #7975e51a}#wave-card[data-tier="excellent"]{border-color:#d0a145;box-shadow:0 0 24px #e0b34630}#wave-card[data-tier="perfect"]{border-color:#dca726;box-shadow:0 0 0 3px #eac45f30,0 0 36px #e4b63450;animation:celebrate 1s ease-in-out 3}
+@keyframes confetti{0%{opacity:0;translate:0 0}10%{opacity:1}100%{opacity:0;translate:var(--dx) var(--dy);rotate:var(--spin)}}@keyframes celebrate{50%{box-shadow:0 0 0 6px #eac45f20,0 0 48px #e4b63470}}
+@media(prefers-reduced-motion:reduce){.particle{animation:none;display:none}#wave-card{animation:none!important;transition:none}}
+@media(max-width:600px){.actions{justify-content:stretch}.actions button{flex:1 1 calc(50% - 10px)}.task-picker button{flex:1 1 calc(50% - 10px)}.complete{text-align:center}}
 </style>
 </head>
 <body>
 <main>
-<header><h1>Wave Creator</h1></header>
+<header><h1>Wave Creator</h1><span id="task-label" class="task-label"></span></header>
+<div id="lab">
 <div class="workspace">
 <section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div></section>
-<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すと波が右へ進み、中央付近で停止します。"></canvas></div></section>
-<div class="actions"><button id="reset" type="button">やり直し</button><button id="save" type="button" disabled>画像を保存</button></div>
+<section class="card" id="wave-card"><h2>生じる波</h2><div class="canvas-wrap" id="wave-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すと波が右へ進み、中央付近で停止します。"></canvas><div id="effects" class="effects" aria-hidden="true"></div></div></section>
+<div class="actions"><button id="reset" type="button">やり直し</button><button id="save" type="button" disabled>画像を保存</button><button id="enter" type="button">課題へ進む</button><button id="next" type="button" hidden disabled>次の課題へ</button><button id="end" type="button" hidden disabled>課題を終わる</button><button id="practice-home" type="button" hidden disabled>最初に戻る</button></div>
 </div>
+<p id="complete" class="complete" role="status" hidden>これで課題は終了です</p>
 <div class="instructions">
 <p>① 波源を押したまま、上下に自由に動かします。</p>
 <p>② 指を離すと波源が原点に戻り、つくった波が右へ進んで止まります。</p>
-<p>③ 波形を確認したら、画像を保存するか「やり直し」で次の実験へ。</p>
+<p id="instruction-last">③ 波形を確認したら、画像を保存するか「やり直し」で次の実験へ。</p>
 </div>
+</div>
+<section id="finished" class="finished" hidden><p>これで課題は終了です</p><button id="home" type="button">最初に戻る</button></section>
+<nav id="task-picker" class="task-picker" aria-label="課題を選ぶ" hidden><button type="button" data-task="0">課題①</button><button type="button" data-task="1">課題②</button><button type="button" data-task="2">課題③</button><button type="button" data-task="3">課題④</button></nav>
 <span id="status" class="sr-only" role="status"></span>
 
 
 </main>
 <script>
 'use strict';
-const source = document.getElementById('source'), wave = document.getElementById('wave');
-const statusText = document.getElementById('status'), save = document.getElementById('save');
+const $ = id => document.getElementById(id);
+const source = $('source'), wave = $('wave'), save = $('save');
 const STEP = 1 / 60;
+const TASKS = [
+  {name: '課題①', points: [[0,0],[0.5,1],[1,0]]},
+  {name: '課題②', points: [[0,0],[1/3,-1],[1,0]]},
+  {name: '課題③', points: [[0,0],[1/6,0.5],[1/3,0],[2/3,1],[1,0]]},
+  {name: '課題④', sine: true}
+];
 let state = 'ready', displacement = 0, samples = [0], time = 0, span = 8;
 let amplitudeRange = 1, stopTime = 0, playbackRate = 1;
 let last = null, accumulator = 0, pointer = null, activeKey = null;
+let taskIndex = -1, runMode = 'sequence', screen = 'lab', score = null, saved = false, saving = false, attempt = 0;
+let unlocked = false;
+try { unlocked = localStorage.getItem('wave-creator-tasks-unlocked') === '1'; } catch {}
 const sizes = new Map();
-function message(text) { statusText.textContent = text; }
+function message(text) { $('status').textContent = text; }
+function inTask() { return taskIndex >= 0; }
+function targetAt(u, index = taskIndex) {
+  if (index < 0 || u < 0 || u > 1) return 0;
+  const task = TASKS[index];
+  if (task.sine) return Math.sin(2 * Math.PI * u);
+  for (let i = 1; i < task.points.length; i++) {
+    const [x1,y1] = task.points[i-1], [x2,y2] = task.points[i];
+    if (u <= x2) return y1 + (y2-y1) * (u-x1) / (x2-x1);
+  }
+  return 0;
+}
+function updateInterface() {
+  $('lab').hidden = screen !== 'lab';
+  $('finished').hidden = screen !== 'finished';
+  $('task-label').textContent = screen === 'lab' && inTask() ? TASKS[taskIndex].name : '';
+  $('enter').hidden = inTask();
+  $('enter').disabled = state === 'drawing' || state === 'moving';
+  $('next').hidden = !inTask() || runMode !== 'sequence' || taskIndex === 3;
+  $('next').disabled = !saved;
+  $('end').hidden = !inTask() || runMode !== 'sequence' || taskIndex !== 3;
+  $('end').disabled = !saved;
+  $('practice-home').hidden = !inTask() || runMode !== 'practice';
+  $('practice-home').disabled = !saved;
+  $('complete').hidden = !(inTask() && taskIndex === 3 && saved && runMode === 'sequence');
+  $('task-picker').hidden = !unlocked || inTask() || screen !== 'lab';
+  save.disabled = state !== 'stopped' || saving;
+  $('instruction-last').textContent = inTask()
+    ? '③ 波が止まったら画像を保存し、次へ進みます。'
+    : '③ 波形を確認したら、画像を保存するか「やり直し」で次の実験へ。';
+  $('wave-card').dataset.tier = score === null ? '' : scoreTier(score);
+}
 function setDisplacement(value) {
   displacement = Math.max(-1, Math.min(1, value));
   source.setAttribute('aria-valuenow', displacement.toFixed(2));
 }
+function resetExperiment() {
+  const captured = pointer; pointer = null; activeKey = null;
+  if (captured !== null && source.hasPointerCapture(captured)) source.releasePointerCapture(captured);
+  attempt++; saved = false; saving = false; score = null;
+  state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8;
+  amplitudeRange = 1; stopTime = 0; playbackRate = 1; last = null; accumulator = 0;
+  $('effects').replaceChildren();
+  message(inTask() ? `${TASKS[taskIndex].name}。点線の波形を作ってください` : '左の波源を上下に動かしてください');
+  updateInterface(); render();
+}
+function startTask(index, mode) {
+  taskIndex = index; runMode = mode; screen = 'lab'; resetExperiment();
+}
+function goHome() {
+  taskIndex = -1; screen = 'lab'; resetExperiment();
+}
+$('reset').addEventListener('click', resetExperiment);
+$('enter').addEventListener('click', () => {
+  if (state !== 'drawing' && state !== 'moving' && !inTask()) startTask(0, 'sequence');
+});
+$('next').addEventListener('click', () => {
+  if (saved && inTask() && runMode === 'sequence' && taskIndex < 3) startTask(taskIndex + 1, 'sequence');
+});
+$('end').addEventListener('click', () => {
+  if (!saved || taskIndex !== 3 || runMode !== 'sequence') return;
+  screen = 'finished'; updateInterface(); $('home').focus();
+});
+$('home').addEventListener('click', () => {
+  if (screen !== 'finished') return;
+  unlocked = true;
+  try { localStorage.setItem('wave-creator-tasks-unlocked', '1'); } catch {}
+  goHome();
+});
+$('practice-home').addEventListener('click', () => { if (saved && runMode === 'practice') goHome(); });
+for (const button of document.querySelectorAll('[data-task]')) button.addEventListener('click', () => {
+  if (unlocked && !inTask() && screen === 'lab') startTask(Number(button.dataset.task), 'practice');
+});
 function begin() {
-  if (state !== 'ready') return false;
+  if (state !== 'ready' || screen !== 'lab') return false;
   state = 'drawing'; last = null;
-  message('波源を記録中 — 指を離すと波形を整えます');
-  return true;
+  message('波源を記録中'); updateInterface(); return true;
 }
 function finish() {
   if (state !== 'drawing') return;
   samples.push(displacement, 0);
   let peak = 0;
   for (const value of samples) peak = Math.max(peak, Math.abs(value));
-  // 波源が動く前後の待ち時間を除き、実際の波形に表示を合わせる。
   if (peak > 0) {
     const threshold = peak * 0.001;
     const first = samples.findIndex(value => Math.abs(value) > threshold);
     let end = samples.length - 1;
     while (end > first && Math.abs(samples[end]) <= threshold) end--;
-    samples = [0, ...samples.slice(Math.max(0, first - 1), end + 2), 0];
-  } else {
-    samples = [0, 0];
-  }
-  const duration = (samples.length - 1) * STEP;
+    samples = samples.slice(Math.max(0, first-1), end+2);
+    samples.unshift(0); samples.push(0);
+  } else samples = [0, 0];
+  const duration = (samples.length-1) * STEP;
   amplitudeRange = peak > 0 ? peak : 1;
-  // 完成した波の幅を画面の半分に合わせてから、左端から送り出す。
-  // 停止時には波全体が25〜75%の範囲に入り、中央に収まる。
-  span = 2 * duration;
-  stopTime = 1.5 * duration;
-  playbackRate = stopTime / 2;
-  time = 0;
-  accumulator = 0; last = null;
-  state = peak > 0 ? 'moving' : 'stopped'; setDisplacement(0); save.disabled = peak > 0;
-  message(peak > 0 ? '波が進んでいます' : '波源の動きがありません。「やり直し」で波源を上下に動かしてください');
-  render();
+  span = 2 * duration; stopTime = 1.5 * duration; playbackRate = stopTime / 2;
+  time = 0; accumulator = 0; last = null; setDisplacement(0);
+  state = peak > 0 ? 'moving' : 'stopped';
+  if (state === 'stopped' && inTask()) showResult();
+  else message(peak > 0 ? '波が進んでいます' : '波源を上下に動かしてください');
+  updateInterface(); render();
 }
-
 function move(event) {
   const rect = source.getBoundingClientRect();
-  setDisplacement((rect.height / 2 - (event.clientY - rect.top)) / (rect.height * .34));
-  render();
+  const mid = (64 + rect.height - 28) / 2, scale = (rect.height - 92) * .4;
+  setDisplacement((mid - (event.clientY-rect.top)) / scale); render();
 }
 source.addEventListener('pointerdown', event => {
   if (pointer !== null || activeKey !== null || (event.pointerType === 'mouse' && event.button !== 0) || !begin()) return;
@@ -106,7 +187,7 @@ source.addEventListener('lostpointercapture', release);
 source.addEventListener('keydown', event => {
   if (!['ArrowUp','ArrowDown'].includes(event.key)) return;
   event.preventDefault();
-  if (pointer !== null || (state !== 'ready' && state !== 'drawing')) return;
+  if (pointer !== null || screen !== 'lab' || (state !== 'ready' && state !== 'drawing')) return;
   if (state === 'ready') begin();
   activeKey = event.key; setDisplacement(displacement + (event.key === 'ArrowUp' ? .1 : -.1)); render();
 });
@@ -116,74 +197,143 @@ document.addEventListener('visibilitychange', () => {
   last = null;
   if (document.hidden && state === 'drawing') { pointer = null; activeKey = null; finish(); }
 });
-document.getElementById('reset').addEventListener('click', () => {
-  if (pointer !== null && source.hasPointerCapture(pointer)) source.releasePointerCapture(pointer);
-  pointer = null; activeKey = null; state = 'ready'; setDisplacement(0); samples = [0]; time = 0; span = 8; amplitudeRange = 1; stopTime = 0; playbackRate = 1; last = null; accumulator = 0; save.disabled = true;
-  message('左の波源を上下に動かしてください'); render();
-});
-function sample(t) {
-  if (state === 'ready' || state === 'drawing') return 0;
-  if (t < 0) return 0;
-  const index = t / STEP, i = Math.floor(index), fraction = index - i;
-  const a = samples[Math.min(i, samples.length - 1)] || 0;
-  const b = samples[Math.min(i + 1, samples.length - 1)] || 0;
-  return a + (b - a) * fraction;
+// 記録は時間順。右進行波は古い動きほど右にあるため、採点時は逆順に読む。
+function recordedAt(t) {
+  if (t < 0 || t > (samples.length-1)*STEP) return 0;
+  const index = t / STEP, i = Math.floor(index), fraction = index-i;
+  const a = samples[i] || 0, b = samples[Math.min(i+1,samples.length-1)] || 0;
+  return a + (b-a)*fraction;
+}
+function sample(t) { return state === 'ready' || state === 'drawing' ? 0 : recordedAt(t); }
+function calculateMatch(index = taskIndex) {
+  if (samples.every(value => value === 0)) return 0;
+  const duration = (samples.length-1)*STEP;
+  let difference = 0, magnitude = 0;
+  for (let i=0; i<=600; i++) {
+    const u = i/600;
+    const actual = recordedAt((1-u)*duration)/amplitudeRange, target = targetAt(u,index);
+    difference += Math.abs(actual-target);
+    magnitude += Math.abs(actual)+Math.abs(target);
+  }
+  return magnitude > 0 ? Math.max(0,Math.min(100,100*(1-difference/magnitude))) : 0;
+}
+function scoreTier(value) {
+  if (value >= 99.5) return 'perfect';
+  if (value >= 95) return 'excellent';
+  if (value >= 80) return 'great';
+  if (value >= 60) return 'good';
+  return 'plain';
+}
+function showResult() {
+  score = calculateMatch(); updateInterface();
+  message(`一致率 ${score.toFixed(1)}パーセント`);
+  celebrate(score);
+}
+function celebrate(value) {
+  $('effects').replaceChildren();
+  if (value < 60 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const count = value >= 99.5 ? 100 : value >= 95 ? 65 : value >= 80 ? 36 : 12;
+  const colors = value >= 95 ? ['#e6b742','#fff1a8','#e78a64','#b094e8'] : ['#55a6b2','#8d89df','#86cdbb'];
+  for (let i=0;i<count;i++) {
+    const particle = document.createElement('span');
+    particle.className = i%3 === 0 ? 'particle spark' : 'particle';
+    for (const [key,val] of Object.entries({
+      '--color':colors[i%colors.length], '--dx':`${(Math.random()-.5)*650}px`,
+      '--dy':`${100+Math.random()*400}px`, '--rotation':`${Math.random()*180}deg`,
+      '--spin':`${(Math.random()-.5)*1000}deg`, '--duration':`${1.4+Math.random()*1.6}s`
+    })) particle.style.setProperty(key,val);
+    particle.addEventListener('animationend', () => particle.remove(), {once:true});
+    $('effects').append(particle);
+  }
 }
 function draw(canvas, isSource) {
-  const size = sizes.get(canvas); if (!size) return;
+  const size = sizes.get(canvas); if (!size || size.width < 1 || size.height < 1) return;
   const {width:w,height:h,ratio} = size, c = canvas.getContext('2d');
-  c.setTransform(ratio,0,0,ratio,0,0); c.clearRect(0,0,w,h); c.fillStyle = '#fff'; c.fillRect(0,0,w,h);
-  const left = isSource ? w / 2 : 32, right = w - 18, top = 30, bottom = h - 28, mid = h / 2, scale = h * .34 / (isSource ? 1 : amplitudeRange);
-  c.strokeStyle = '#edf1f3'; c.lineWidth = 1;
-  for (let j=-2;j<=2;j++) { const y=mid+j*h*.34/2;c.beginPath();c.moveTo(isSource?12:left,y);c.lineTo(right,y);c.stroke(); }
-  if (!isSource) for(let j=1;j<=8;j++){const x=left+(right-left)*j/8;c.beginPath();c.moveTo(x,top);c.lineTo(x,bottom);c.stroke();}
-  c.strokeStyle = '#6c818d'; c.lineWidth = 1.3;
+  c.setTransform(ratio,0,0,ratio,0,0); c.clearRect(0,0,w,h); c.fillStyle='#fff'; c.fillRect(0,0,w,h);
+  const result = !isSource && score !== null;
+  const left = isSource ? w/2 : 32, right = w-18, top = 64, bottom = h-28;
+  const mid = (top+bottom)/2, visualScale = (bottom-top)*.4;
+  const scale = visualScale / (isSource ? 1 : amplitudeRange);
+  if (result) {
+    const tier = scoreTier(score);
+    const palette = {plain:'#647078',good:'#247785',great:'#6b60bf',excellent:'#aa7914',perfect:'#a16a04'};
+    const fontSize = Math.min(w/7.4, tier==='perfect' ? 34 : tier==='excellent' ? 31 : tier==='great' ? 29 : 25);
+    if (score >= 95) {
+      const gradient=c.createLinearGradient(left,0,right,0);gradient.addColorStop(0,'#fff');gradient.addColorStop(.5,'#fff1bd');gradient.addColorStop(1,'#fff');c.fillStyle=gradient;c.fillRect(left,4,right-left,48);
+    }
+    c.textAlign='center';c.fillStyle=palette[tier];c.font=`${score>=80?'700':'500'} ${fontSize}px system-ui`;
+    c.fillText(`一致率 ${score.toFixed(1)}%`,(left+right)/2,36);
+    if (score>=80) { c.font='12px system-ui';c.fillText(score>=95?'✦ ✦ ✦':'✦ ✦',(left+right)/2,53); }
+  }
+  c.strokeStyle='#edf1f3'; c.lineWidth=1;
+  for (let j=-2;j<=2;j++) {const y=mid+j*visualScale/2;c.beginPath();c.moveTo(isSource?12:left,y);c.lineTo(right,y);c.stroke();}
+  if (!isSource) for (let j=1;j<=8;j++) {const x=left+(right-left)*j/8;c.beginPath();c.moveTo(x,top);c.lineTo(x,bottom);c.stroke();}
+  c.strokeStyle='#6c818d';c.lineWidth=1.3;
   c.beginPath();c.moveTo(left,bottom);c.lineTo(left,top);c.lineTo(left-4,top+7);c.moveTo(left,top);c.lineTo(left+4,top+7);
-  if(!isSource){c.moveTo(left,mid);c.lineTo(right,mid);c.lineTo(right-7,mid-4);c.moveTo(right,mid);c.lineTo(right-7,mid+4);}c.stroke();
-  c.font='12px system-ui';c.fillStyle='#607683';c.textAlign='left';c.fillText('変位',isSource?10:8,18);c.fillText('0',left-14,mid+16);
-  if(isSource){
+  if (!isSource) {c.moveTo(left,mid);c.lineTo(right,mid);c.lineTo(right-7,mid-4);c.moveTo(right,mid);c.lineTo(right-7,mid+4);}c.stroke();
+  c.font='12px system-ui';c.fillStyle='#607683';c.textAlign='left';c.fillText('変位',isSource?10:8,top-10);c.fillText('0',left-14,mid+16);
+  if (isSource) {
     c.setLineDash([3,4]);c.strokeStyle='#b8cdd3';c.beginPath();c.moveTo(left,mid);c.lineTo(left,mid-displacement*scale);c.stroke();c.setLineDash([]);
     c.beginPath();c.arc(left,mid-displacement*scale,22,0,Math.PI*2);c.fillStyle='#e0eff1';c.fill();
     c.beginPath();c.arc(left,mid-displacement*scale,9,0,Math.PI*2);c.fillStyle='#247785';c.fill();
+    c.font='12px system-ui';c.fillStyle='#fff';c.textAlign='center';
+    c.fillText('↕',left,mid-displacement*scale+4);
   } else {
-    c.textAlign='right';c.fillText('→',right,18);c.fillText('位置',right,h-8);
+    c.textAlign='right';c.fillText('→',right,top-10);c.fillText('位置',right,h-8);
+    if (inTask()) {
+      c.save();c.setLineDash([6,5]);c.strokeStyle='#d18c44';c.lineWidth=2.5;c.lineJoin='round';c.beginPath();
+      for (let i=0;i<=400;i++) {const u=i/400,x=left+(right-left)*(.25+.5*u),y=mid-targetAt(u)*visualScale;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();c.restore();
+    }
     c.strokeStyle='#247785';c.lineWidth=3;c.lineJoin='round';c.beginPath();
-    for(let i=0;i<=Math.ceil(right-left);i++){const x=left+i;const y=mid-sample(time-i/(right-left)*span)*scale;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();
+    for (let i=0;i<=Math.ceil(right-left);i++) {const x=left+i,y=mid-sample(time-i/(right-left)*span)*scale;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();
   }
 }
-function render(){draw(source,true);draw(wave,false);}
-new ResizeObserver(entries => {
-  for(const entry of entries){const canvas=entry.target, rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);sizes.set(canvas,{width:rect.width,height:rect.height,ratio});}
+function render() {draw(source,true);draw(wave,false);}
+const observer = new ResizeObserver(entries => {
+  for (const entry of entries) {
+    const canvas=entry.target,rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;
+    canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
+    sizes.set(canvas,{width:rect.width,height:rect.height,ratio});
+  }
   render();
-}).observe(source);
-new ResizeObserver(() => {
-  const rect=wave.getBoundingClientRect(),ratio=window.devicePixelRatio||1;wave.width=Math.round(rect.width*ratio);wave.height=Math.round(rect.height*ratio);sizes.set(wave,{width:rect.width,height:rect.height,ratio});render();
-}).observe(wave);
-function frame(now){
-  if (last !== null && !document.hidden) {
-    const dt = Math.min((now-last)/1000, .05);
+});
+observer.observe(source);observer.observe(wave);
+function frame(now) {
+  if (last !== null && !document.hidden && screen === 'lab') {
+    const dt=Math.min((now-last)/1000,.05);
     if (state === 'drawing') {
-      accumulator += dt;
-      while (accumulator >= STEP) {
-        accumulator -= STEP; samples.push(displacement);
-      }
+      accumulator+=dt;
+      while (accumulator>=STEP) {accumulator-=STEP;samples.push(displacement);}
     } else if (state === 'moving') {
-      time = Math.min(stopTime, time + dt * playbackRate);
-      if (time >= stopTime) {
-        state = 'stopped'; save.disabled = false;
-        message('波が止まりました');
+      time=Math.min(stopTime,time+dt*playbackRate);
+      if (time>=stopTime) {
+        state='stopped';
+        if (inTask()) showResult(); else message('波が止まりました');
+        updateInterface();
       }
       render();
     }
   }
-  last = now;
-  requestAnimationFrame(frame);
+  last=now;requestAnimationFrame(frame);
 }
-
-requestAnimationFrame(frame);
-save.addEventListener('click',()=>{
-  wave.toBlob(blob=>{if(!blob){message('画像を生成できませんでした。もう一度お試しください');return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='wave-creator.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);},'image/png');
+save.addEventListener('click', () => {
+  if (state !== 'stopped' || saving || screen !== 'lab') return;
+  const savingAttempt=attempt, savingTask=taskIndex;
+  saving=true;updateInterface();
+  wave.toBlob(blob => {
+    if (savingAttempt !== attempt || savingTask !== taskIndex || screen !== 'lab') return;
+    saving=false;
+    if (!blob) {message('画像を生成できませんでした。もう一度お試しください');updateInterface();return;}
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=inTask()?`wave-task-${taskIndex+1}.png`:'wave-creator.png';
+    document.body.append(a);
+    try {a.click();saved=true;message('画像を保存しました');}
+    catch {message('保存できませんでした。もう一度お試しください');}
+    finally {a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+    updateInterface();
+  },'image/png');
 });
+updateInterface(); render(); requestAnimationFrame(frame);
 </script>
 </body>
 </html>
