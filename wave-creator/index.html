@@ -6,20 +6,33 @@
 <meta name="description" content="波源を指で動かして、横波が伝わる様子を観察する実験。">
 <title>Wave Creator｜波をつくろう</title>
 <style>
-:root{font-family:system-ui,-apple-system,sans-serif;color:#243a48;background:#f5f7f8;font-synthesis:none}*{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;padding:40px 24px}header{margin-bottom:28px}.eyebrow{font-size:12px;color:#397d86;letter-spacing:.16em}h1{font-size:clamp(26px,4vw,38px);margin:8px 0 12px;letter-spacing:.02em}header p{margin:0;color:#586e7c;line-height:1.8}.workspace{display:grid;grid-template-columns:180px minmax(0,1fr) 154px;gap:20px;align-items:start}.card{border:1px solid #cbd7dd;border-radius:14px;background:white;overflow:hidden}.card h2{font-size:16px;margin:0;padding:17px 18px;border-bottom:1px solid #e1e8ec}.canvas-wrap{height:340px;position:relative}canvas{display:block;width:100%;height:100%}#source{touch-action:none;cursor:ns-resize}#source:focus-visible{outline:3px solid #d38b38;outline-offset:-4px}.arrow{display:none}.actions{display:flex;flex-direction:column;gap:12px;padding-top:0}button{min-height:48px;padding:12px;border-radius:9px;font:inherit;font-size:14px;font-weight:600;border:1px solid #bdcdd5;background:white;color:#243a48;cursor:pointer}button.primary{background:#246f7c;color:white;border-color:#246f7c}button:disabled{opacity:.45;cursor:default}button:focus-visible{outline:3px solid #d38b38;outline-offset:3px}.caption{padding:12px 16px;border-top:1px solid #e1e8ec;color:#607683;font-size:12px;line-height:1.7;min-height:65px}.status{margin-top:22px;display:flex;align-items:center;gap:10px;font-size:14px;color:#39636e}.dot{width:8px;height:8px;border-radius:50%;background:#2f8995}.help{margin-top:24px;padding:18px 20px;border-left:3px solid #70a4ad;background:#edf3f5;line-height:1.9;font-size:14px;color:#526b79}.help p{margin:0}.footnote{font-size:12px;color:#6c818d;line-height:1.8;margin-top:18px}@media(max-width:950px){.workspace{grid-template-columns:150px minmax(0,1fr)}.actions{grid-column:1/-1;flex-direction:row}.actions button{min-width:150px}.canvas-wrap{height:300px}}@media(max-width:540px){main{padding:24px 14px}.workspace{grid-template-columns:100px minmax(0,1fr);gap:10px}.card h2{padding:14px 10px;font-size:14px}.canvas-wrap{height:300px}.caption{padding:10px;font-size:11px;min-height:78px}.actions button{min-width:0;flex:1;font-size:13px}.help{font-size:13px;padding:14px}.status{font-size:13px}}
+:root{font-family:system-ui,-apple-system,sans-serif;color:#29343a;background:#fafafa;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;padding:32px 24px}
+header{margin-bottom:28px}h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.03em}
+.workspace{display:grid;grid-template-columns:160px minmax(0,1fr);gap:20px;align-items:start}
+.card{border:1px solid #d9dee1;border-radius:6px;background:#fff;overflow:hidden}
+.card h2{font-size:13px;font-weight:500;color:#647078;margin:0;padding:14px 16px}
+.canvas-wrap{height:clamp(300px,58vh,560px);position:relative}
+canvas{display:block;width:100%;height:100%}#source{touch-action:none;cursor:ns-resize}
+.actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px}
+button{min-height:46px;padding:11px 20px;border-radius:5px;font:inherit;font-size:14px;border:1px solid #d1d8dc;background:white;color:#29343a;cursor:pointer}
+button:hover{background:#f0f3f4}button:disabled{opacity:.4;cursor:default}
+button:focus-visible,#source:focus-visible{outline:3px solid #428692;outline-offset:-3px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(max-width:600px){main{padding:20px 12px}header{margin-bottom:20px}h1{font-size:18px}.workspace{grid-template-columns:84px minmax(0,1fr);gap:10px}.card h2{padding:12px 10px}.canvas-wrap{height:clamp(280px,56svh,480px)}.actions button{flex:1;padding:11px 12px}}
 </style>
 </head>
 <body>
 <main>
-<header><div class="eyebrow">WAVE CREATOR · v3</div><h1>波をつくろう</h1><p>波源を上下に動かして、波が伝わる様子を観察しよう。</p></header>
+<header><h1>Wave Creator</h1></header>
 <div class="workspace">
-<section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div><div class="caption">丸い点を上下に動かす<br>指を離すと波形を整えます</div></section>
-<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すとスケールを調整し、波形全体を中央に表示します。"></canvas></div><div class="caption">横軸：位置　／　縦軸：変位<br>操作後に縦横のスケールを自動調整します</div></section>
-<div class="actions"><button id="reset" class="primary" type="button">やり直し</button><button id="save" type="button" disabled>スクリーンショット</button></div>
+<section class="card"><h2>波源</h2><div class="canvas-wrap"><canvas id="source" tabindex="0" role="slider" aria-label="波源の変位。指で上下にドラッグ、または上下矢印キーで操作。キーを離すと伝播します。" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">Canvas対応のブラウザが必要です。</canvas></div></section>
+<section class="card"><h2>生じる波</h2><div class="canvas-wrap"><canvas id="wave" role="img" aria-label="波源の動きから生じた波。指を離すとスケールを調整し、波形全体を中央に表示します。"></canvas></div></section>
+<div class="actions"><button id="reset" type="button">やり直し</button><button id="save" type="button" disabled>画像を保存</button></div>
 </div>
-<div class="status" role="status"><span class="dot" aria-hidden="true"></span><span id="status">左の波源を上下に動かしてください</span></div>
-<div class="help"><p>① 波源を押したまま、上下に自由に動かします。</p><p>② 指を離すと波形に合わせて表示範囲を整え、波全体が画面の中央で止まります。</p><p>③ 波形を確認したら、画像を保存するか「やり直し」で次の実験へ。</p></div>
-<p class="footnote">減衰・反射のない横波のモデルです。媒質の変位が一定の速さで伝わります。画面は模式図で、単位や縮尺は固定していません。操作後は波形ごとに縦横を自動調整するため、異なる実験の振幅や波長を画面上の大きさだけで比較することはできません。キーボードでは波源を選択し、上下矢印キーで操作できます。</p>
+<span id="status" class="sr-only" role="status"></span>
+
+
 </main>
 <script>
 'use strict';
@@ -123,7 +136,7 @@ function draw(canvas, isSource) {
     c.beginPath();c.arc(left,mid-displacement*scale,22,0,Math.PI*2);c.fillStyle='#e0eff1';c.fill();
     c.beginPath();c.arc(left,mid-displacement*scale,9,0,Math.PI*2);c.fillStyle='#247785';c.fill();
   } else {
-    c.textAlign='right';c.fillText('進む向き →',right,18);c.fillText('位置',right,h-8);
+    c.textAlign='right';c.fillText('→',right,18);c.fillText('位置',right,h-8);
     c.strokeStyle='#247785';c.lineWidth=3;c.lineJoin='round';c.beginPath();
     for(let i=0;i<=Math.ceil(right-left);i++){const x=left+i;const y=mid-sample(time-i/(right-left)*span)*scale;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();
   }
