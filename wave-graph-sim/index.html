@@ -15,7 +15,7 @@
 <div class="card"><div class="heading"><h2>右向きに進む正弦波</h2><span class="tag">周期 T = 4.0 s　→</span></div>
 <svg id="wave" class="plot live" viewBox="0 0 720 320" role="img" tabindex="0" aria-label="右向きに進む波。クリックで位置を選択。左右キーで位置を調整し、Enter キーで決定できます。"></svg>
 <p class="hint"><span class="key"></span>波上をタップ → その位置の y–t グラフを表示</p></div>
-<aside class="card clock-panel"><p class="clock-label">ストップウォッチ</p><button id="capture" class="clock-button" aria-label="現在の時刻の y–x グラフを描く"><svg id="clock" viewBox="0 0 160 174" aria-hidden="true"></svg></button><div id="time" class="readout">0.00 s</div><div class="small">タップで y–x グラフを記録<br>針は 8 秒で1周（2周期）</div><button id="reset" class="reset">リセット</button></aside>
+<aside class="card clock-panel"><p class="clock-label">ストップウォッチ</p><button id="capture" class="clock-button" aria-label="現在の時刻の y–x グラフを描く"><svg id="clock" viewBox="0 0 160 174" aria-hidden="true"></svg></button><div id="time" class="readout">0.00 s</div><div class="small">タップで y–x グラフを記録<br>8 秒で1周し、0 秒に戻ります</div><button id="reset" class="reset">リセット</button></aside>
 </section>
 <section class="bottom" aria-label="選択した波のグラフ">
 <div class="card"><div class="heading"><h2>y–x グラフ</h2><span class="tag">ある時刻の波の形</span></div><p id="snapshot-label" class="selection">t = — s</p><svg id="snapshot" class="plot" viewBox="0 0 520 300" role="img" aria-label="時刻未選択の y–x グラフ。軸のみ。"></svg><p class="hint">ストップウォッチをタップして時刻を選択</p></div>
@@ -46,7 +46,7 @@ const clock=$('clock');el('rect',{x:70,y:3,width:20,height:8,rx:3,fill:'#7c8fa4'
 for(let i=0;i<40;i++){const a=i*Math.PI/20,r=i%5?62:58;el('line',{x1:80+r*Math.sin(a),y1:94-r*Math.cos(a),x2:80+65*Math.sin(a),y2:94-65*Math.cos(a),stroke:i%5?'#ccd9e7':'#859bb3','stroke-width':i%5?1:2},clock);}
 for(let i=0;i<8;i++){const a=i*Math.PI/4;el('text',{x:80+47*Math.sin(a),y:99-47*Math.cos(a),'text-anchor':'middle'},clock,String(i));}
 const hand=el('line',{x1:80,y1:94,x2:80,y2:41,stroke:'#2780d9','stroke-width':3.5,'stroke-linecap':'round'},clock);el('circle',{cx:80,cy:94,r:5,fill:'#2780d9'},clock);
-function now(){return (performance.now()-origin)/1000;}
+function now(){return ((performance.now()-origin)/1000) % 8;}
 function render(){curve(wave,x=>value(x,elapsed));$('time').textContent=elapsed.toFixed(2)+' s';hand.setAttribute('transform',`rotate(${elapsed/8*360%360} 80 94)`);if(selectedX!==null){guide.setAttribute('x1',wave.x(selectedX));guide.setAttribute('x2',wave.x(selectedX));point.setAttribute('cx',wave.x(selectedX));point.setAttribute('cy',wave.y(value(selectedX,elapsed)));}}
 function selectPosition(x){selectedX=Math.max(0,Math.min(RANGE,x));keyboardX=selectedX;curve(history,t=>value(selectedX,t));$('history-label').textContent=`x = ${selectedX.toFixed(2)} m`;$('history').setAttribute('aria-label',`位置 x = ${selectedX.toFixed(2)} メートルの y–t グラフ`);guide.setAttribute('visibility','visible');point.setAttribute('visibility','visible');$('announcement').textContent=`x = ${selectedX.toFixed(2)} m の振動を表示しました。`;render();}
 wave.svg.addEventListener('click',e=>{const pt=wave.svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const local=pt.matrixTransform(wave.svg.getScreenCTM().inverse());selectPosition((local.x-wave.left)/(wave.right-wave.left)*RANGE);});
